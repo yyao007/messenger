@@ -332,12 +332,24 @@ public class Messenger {
    public static void CreateUser(Messenger esql){
       try{
          System.out.print("\tEnter user login: ");
-         String login = in.readLine();
+	 // find if the login already exits
+	 String login;
+	 int loginNum;
+         do {
+	    login = in.readLine();
+	    String query = String.format("SELECT * FROM usr WHERE login = '%s'", login);
+	    loginNum = esql.executeQuery(query);
+	    if (loginNum > 0) {
+	       System.out.println("\tThis login is already existed, please try another.\n");
+	       System.out.print("\tEnter user login: ");
+	    }
+	 } while(loginNum > 0);
+	 	
          System.out.print("\tEnter user password: ");
          String password = in.readLine();
          System.out.print("\tEnter user phone: ");
          String phone = in.readLine();
-
+	 
 	 //Creating empty contact\block lists for a user
 	 esql.executeUpdate("INSERT INTO USER_LIST(list_type) VALUES ('block')");
 	 int block_id = esql.getCurrSeqVal("user_list_list_id_seq");
