@@ -270,12 +270,14 @@ public class Messenger {
                 System.out.println("1. Add to contact list");
                 System.out.println("2. Browse contact list");
                 System.out.println("3. Write a new message");
+                System.out.println("4. Delete Account");
                 System.out.println(".........................");
                 System.out.println("9. Log out");
                 switch (readChoice()){
                    case 1: AddToContact(esql); break;
                    case 2: ListContacts(esql); break;
                    case 3: NewMessage(esql); break;
+                   case 4: DeleteAccount(esql); break;
                    case 9: usermenu = false; break;
                    default : System.out.println("Unrecognized choice!"); break;
                 }
