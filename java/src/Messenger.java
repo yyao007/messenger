@@ -180,6 +180,7 @@ public class Messenger {
        ResultSet rs = stmt.executeQuery (query);
 
        int rowCount = 0;
+
        // iterates through the result set and count nuber of results.
        if(rs.next()){
           rowCount++;
@@ -215,7 +216,7 @@ public class Messenger {
             this._connection.close ();
          }//end if
       }catch (SQLException e){
-         // ignored.authorisedUser
+         // ignored.
       }//end try
    }//end cleanup
 
@@ -269,14 +270,12 @@ public class Messenger {
                 System.out.println("1. Add to contact list");
                 System.out.println("2. Browse contact list");
                 System.out.println("3. Write a new message");
-                System.out.println("4. Delete Account");
                 System.out.println(".........................");
                 System.out.println("9. Log out");
                 switch (readChoice()){
                    case 1: AddToContact(esql, authorisedUser); break;
                    case 2: ListContacts(esql); break;
                    case 3: NewMessage(esql); break;
-                   case 4: DeleteAccount(esql, authorizedUser); break;
                    case 9: usermenu = false; break;
                    default : System.out.println("Unrecognized choice!"); break;
                 }
@@ -316,6 +315,8 @@ public class Messenger {
       do {
          System.out.print("Please make your choice: ");
          try { // read the integer, parse it and break.
+            input = Integer.parseInt(in.readLine());
+            break;
          }catch (Exception e) {
             System.out.println("Your input is invalid!");
             continue;
@@ -360,15 +361,13 @@ public class Messenger {
 	        }
 	     } while(userNum > 0);
 
-	     //Creating empty contact\block lists for a user
-	     esql.executeUpdate("INSERT INTO USER_LIST(list_type) VALUES ('block')");
-	     int block_id = esql.getCurrSeqVal("user_list_list_id_seq");
+	 //Creating empty contact\block lists for a user
+	 esql.executeUpdate("INSERT INTO USER_LIST(list_type) VALUES ('block')");
+	 int block_id = esql.getCurrSeqVal("user_list_list_id_seq");
          esql.executeUpdate("INSERT INTO USER_LIST(list_type) VALUES ('contact')");
-	     int contact_id = esql.getCurrSeqVal("user_list_list_id_seq");
+	 int contact_id = esql.getCurrSeqVal("user_list_list_id_seq");
 
-	     int contact_id = esql.getCurrSeqVal("user_list_list_iduthorisedUser_seq");
-         
-	     String query = String.format("INSERT INTO USR (phoneNum, login, password, block_list, contact_list) VALUES ('%s','%s','%s',%s,%s)", phone, login, password, block_id, contact_id);
+	 String query = String.format("INSERT INTO USR (phoneNum, login, password, block_list, contact_list) VALUES ('%s','%s','%s',%s,%s)", phone, login, password, block_id, contact_id);
 
          esql.executeUpdate(query);
          System.out.println ("User successfully created!");
@@ -428,26 +427,6 @@ public class Messenger {
 
    }//end
 
-   public static void DeleteAccount(Messenger esql, String authorizedUser){
-     try{
-   String query = String.format("SELECT init_sender FROM CHAT_LIST CL WHERE CL.init_sender = %s", authorizedUser);
-   int userNum = esql.executeQuery(query);
-
-   if(userNum > 0)
-   {
-       System.out.print("\tSorry, there are linked information to this account. It cannot be deleted");
-   }
-   String deletion = String.format("DELETE FROM USR WHERE login = %s", authorizedUser);
-   esql.executeUpdate(deletion);
-
-    
-     }catch(Exception e){
-        System.err.println(e.getMessage ());
-        return null;
-     }
-
-   }
-
    public static void ListContacts(Messenger esql){
 
    }//end
@@ -457,6 +436,22 @@ public class Messenger {
       // ...
       // ...
    }//end
+
+   public static void DeleteAccount(Messenger esql, String authorizedUser){
+       try{
+           String query = String.format("SELECT init_sender FROM CHAT_LIST CL WHERE CL.init_sender = %s", authorizedUser);
+           int userNum = esql.executeQuery(query);
+
+           if(userNum > 0){
+               System.out.print("\tSorry, there are linked information to this account. It cannot be deleted");
+           }
+           String deletion = String.format("DELETE FROM USR WHERE login = %s", authorizedUser);
+           esql.executeUpdate(deletion);
+       }catch(Exception e){
+           System.err.println(e.getMessage ());
+           return;
+       }
+   }
 
 
    public static void Query6(Messenger esql){
