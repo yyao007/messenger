@@ -270,12 +270,14 @@ public class Messenger {
                 System.out.println("1. Add to contact list");
                 System.out.println("2. Browse contact list");
                 System.out.println("3. Write a new message");
+                System.out.println("4. Delete account");
                 System.out.println(".........................");
                 System.out.println("9. Log out");
                 switch (readChoice()){
                    case 1: AddToContact(esql, authorisedUser); break;
                    case 2: ListContacts(esql); break;
                    case 3: NewMessage(esql); break;
+                   case 4: DeleteAccount(esql,authorisedUser); break;
                    case 9: usermenu = false; break;
                    default : System.out.println("Unrecognized choice!"); break;
                 }
@@ -439,14 +441,23 @@ public class Messenger {
 
    public static void DeleteAccount(Messenger esql, String authorizedUser){
        try{
-           String query = String.format("SELECT init_sender FROM CHAT_LIST CL WHERE CL.init_sender = %s", authorizedUser);
+           System.out.print("\tDo you want to delete your account? (type y to confirm) ");
+           String choice = in.readLine();
+           if(!choice.equals("y")) {
+               return;
+           }
+
+           String query = String.format("SELECT init_sender FROM CHAT WHERE init_sender = '%s'", authorizedUser);
            int userNum = esql.executeQuery(query);
 
            if(userNum > 0){
                System.out.print("\tSorry, there are linked information to this account. It cannot be deleted");
+               return;
            }
-           String deletion = String.format("DELETE FROM USR WHERE login = %s", authorizedUser);
+           String deletion = String.format("DELETE FROM USR WHERE login = '%s'", authorizedUser);
            esql.executeUpdate(deletion);
+           System.out.println("\tUser deleted successfully!\nBye!");
+           System.exit(0);
        }catch(Exception e){
            System.err.println(e.getMessage ());
            return;
