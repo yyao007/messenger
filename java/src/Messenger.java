@@ -33,7 +33,7 @@ public class Messenger {
 
     // reference to physical database connection.
     private Connection _connection = null;
-    static private String authorisedUser = null;
+    static User authorisedUser = null;
 
     // handling the keyboard inputs through a BufferedReader
     // This variable can be global for convenience.
@@ -157,8 +157,15 @@ public class Messenger {
        List<List<String>> result  = new ArrayList<List<String>>();
        while (rs.next()){
            List<String> record = new ArrayList<String>();
-          for (int i=1; i<=numCol; ++i)
-             record.add(rs.getString (i));
+           for (int i=1; i<=numCol; ++i) {
+               String temp = rs.getString(i);
+               if (rs.wasNull()) {
+                   temp = "";
+               }
+               record.add(temp.trim());
+//              System.out.format("%d: "+rs.getString(i).trim(), i);
+          }
+          
           result.add(record);
        }//end while
        stmt.close ();
@@ -246,10 +253,11 @@ public class Messenger {
           String dbname = args[0];
           String dbport = args[1];
           String user = args[2];
-          esql = new Messenger (dbname, dbport, user, "");
+          esql = new Messenger (dbname, dbport, user, "931005");
 
           boolean keepon = true;
           while(keepon) {
+             authorisedUser = null; // reset authorisedUser each time 
              // These are sample SQL statements
              System.out.println("MAIN MENU");
              System.out.println("---------");
@@ -258,7 +266,7 @@ public class Messenger {
              System.out.println("9. < EXIT");
              switch (readChoice()){
                 case 1: CreateUser(esql); break;
-                case 2: authorisedUser = LogIn(esql); break;
+                case 2: LogIn(esql); break;
                 case 9: keepon = false; break;
                 default : System.out.println("Unrecognized choice!"); break;
              }//end switch
@@ -392,50 +400,66 @@ public class Messenger {
      * Check log in credentials for an existing user
      * @return User login or null is the user does not exist
      **/
-    public static String LogIn(Messenger esql){
+    public static void LogIn(Messenger esql){
        try{
           System.out.print("\tEnter user login: ");
           String login = in.readLine();
           System.out.print("\tEnter user password: ");
           String password = in.readLine();
 
-          String query = String.format("SELECT * FROM Usr WHERE login = '%s' AND password = '%s'", login, password);
-          int userNum = esql.executeQuery(query);
-          if (userNum > 0) {
-     	    return login;
+          String query = String.format("SELECT phoneNum FROM USR WHERE login = '%s' AND password = '%s'", login, password);
+          List<List<String>> result = esql.executeQueryAndReturnResult(query);
+
+          if (!result.isEmpty()) {
+              // initialize authorisedUser
+              authorisedUser = new User(login, password, result.get(0).get(0));
+              
+              String getContacts = String.format("SELECT login, phoneNum, status FROM USR WHERE login IN (SELECT list_member FROM USR, USER_LIST_CONTAINS WHERE contact_list = list_id AND login = '%s')", login);
+              String getBlocks = String.format("SELECT login, phoneNum FROM USR WHERE login IN (SELECT list_member FROM USR, USER_LIST_CONTAINS WHERE block_list = list_id AND login = '%s')", login);
+              
+              List<List<String>> contacts = esql.executeQueryAndReturnResult(getContacts);
+              List<List<String>> blocks = esql.executeQueryAndReturnResult(getBlocks);
+              // handle status seperately
+              //String getStatus = String.format("SELECT status FROM USR WHERE login = '%s'", contacts.get(i).get(0));
+              //List<List<String>> status = esql.
+              authorisedUser.set_contact_list(contacts);
+              authorisedUser.set_block_list(blocks);
+     	      return;
           }
           System.out.println("Incorrect username or password.");
-          return null;
+          return;
        }catch(Exception e){
           System.err.println (e.getMessage ());
-          return null;
+          return;
        }
     }//end
 
-    public static String findUser(Messenger esql) {
-        try{
-            System.out.print("\tEnter the user's phone number(b to go back): ");
-            String phone;
-            List<List<String>> userToAdd;
-            do {
-                phone = in.readLine();
+    // public static String findUser(Messenger esql) {
+    //     try{
+    //         System.out.print("\tEnter the user's phone number(b to go back): ");
+    //         String phone;
+    //         List<List<String>> userToAdd;
+    //         do {
+    //             phone = in.readLine();
 
-                if (phone.equals("b")) {
-                    return null;
-                }
+    //             if (phone.equals("b")) {
+    //                 return null;
+    //             }
 
-                String selectUser = String.format("SELECT login FROM USR WHERE phoneNum = '%s'", phone);
-                userToAdd = esql.executeQueryAndReturnResult(selectUser);
-                if (userToAdd.isEmpty()) {
-                    System.out.println("User not exists, please try another.\n");
-                    System.out.print("\tEnter the user's phone number: ");
-                }
-            }while(userToAdd.isEmpty());
-        }catch(Exception e) {
-           System.err.println (e.getMessage());
-           return null;
-       }
-    }
+    //             String selectUser = String.format("SELECT login FROM USR WHERE phoneNum = '%s'", phone);
+    //             userToAdd = esql.executeQueryAndReturnResult(selectUser);
+    //             if (userToAdd.isEmpty()) {
+    //                 System.out.println("User not exists, please try another.\n");
+    //                 System.out.print("\tEnter the user's phone number: ");
+    //             }
+    //         }while(userToAdd.isEmpty());
+    //         return userToAdd.get(0).get(0);
+    //     }catch(Exception e) {
+    //       System.err.println(e.getMessage());
+    //       return null;
+    //   }
+       
+    // }
 
     public static void AddToContact(Messenger esql){
        try{
@@ -449,43 +473,72 @@ public class Messenger {
                    return;
                }
 
-               String selectUser = String.format("SELECT login FROM USR WHERE phoneNum = '%s'", phone);
+               String selectUser = String.format("SELECT login, phoneNum, status FROM USR WHERE phoneNum = '%s'", phone);
                userToAdd = esql.executeQueryAndReturnResult(selectUser);
                if (userToAdd.isEmpty()) {
                    System.out.println("User not exists, please try another.\n");
                    System.out.print("\tEnter the user's phone number: ");
                }
+               String exist = String.format("SELECT ");
            }while(userToAdd.isEmpty());
 
-           String selectContactList = String.format("SELECT contact_list FROM USR WHERE login = '%s'", authorisedUser);
+           String selectContactList = String.format("SELECT contact_list FROM USR WHERE login = '%s'", authorisedUser.getLogin());
            List<List<String>> contact_list = esql.executeQueryAndReturnResult(selectContactList);
 
            String queryUpdate = String.format("INSERT INTO USER_LIST_CONTAINS(list_id, list_member) VALUES('%s', '%s')", contact_list.get(0).get(0), userToAdd.get(0).get(0));
            esql.executeUpdate(queryUpdate);
+           
+           // update authorisedUser also
+           authorisedUser.addContact(userToAdd);
+           
            System.out.println("User added successfully!\n");
        }catch(Exception e) {
-           System.err.println (e.getMessage());
+           System.err.println(e.getMessage());
            return;
        }
 
     }//end
+    
+    public static void AddToBlock(Messenger esql) {
+        System.out.print("Enter the phoneNum of user: ");
+        User block = null;
+        AddToBlock(esql, block);
+        return;
+    } 
+    
+    public static void AddToBlock(Messenger esql, User contact) {
+        try {
 
+
+        }catch(Exception e){
+            System.err.println(e.getMessage());
+            return;
+        }
+    }
+    
+    public static void DeleteContact(Messenger esql, User contact) {
+        try {
+            String delete = String.format("");
+
+        }catch(Exception e){
+            System.err.println(e.getMessage());
+            return;
+        }
+    }
+    
     public static void ListContacts(Messenger esql){
         try {
-            String query = String.format("SELECT login, status FROM USR WHERE login IN (SELECT list_member FROM USR, USER_LIST_CONTAINS WHERE contact_list = list_id AND login = '%s')", authorisedUser);
-            List<List<String>> contacts = esql.executeQueryAndReturnResult(query);
-
-            int i, j;
+            int i = 0;
+            int j = 0;
             int k = 0;
             boolean isMore = true;
-            while (i < contacts.size() && isMore) {
+            List<User> contacts = authorisedUser.get_contact_list();
+            while (isMore) {
                 k += 10;
-                System.out.print("Contacts\tStatus\n");
+                System.out.print("\nContacts\tStatus\n");
                 for (i = k-10; i < contacts.size() && i < k; ++i) {
-                    System.out.format("\n%d. ", i);
-                    for (j = 0; j < contacts.get(i).size(); ++j) {
-                        System.out.print(contacts.get(i).get(j) + "\t");
-                     }
+                    System.out.format("%d. ", i);
+                    System.out.println(contacts.get(i).getLogin() + "\t" + contacts.get(i).getStatus());
                 }
                 do {
                     System.out.print("\nChoose a contact(b to go back, m to view more): ");
@@ -495,7 +548,13 @@ public class Messenger {
                         return;
                     }
                     else if(choice.equals("m")) {
-                        break;
+                        if (i < k && contacts.size() < k) {
+                            System.out.println("No more contacts.");
+                            isMore = false;
+                        }
+                        else {
+                            break;
+                        }
                     }
                     else if (isInteger(choice)) {
                         int index = Integer.parseInt(choice);
@@ -503,10 +562,10 @@ public class Messenger {
                             System.out.println("1. Send message");
                             System.out.println("2. Add to block list");
                             System.out.println("3. Delete contact");
-                            switch (readchoice()) {
-                                case 1: NewMessage(esql, contacts.get(index).get(0)); break;
-                                case 2: AddToBlock(esql, contacts.get(index).get(0)); break;
-                                case 3: DeleteContact(esql, contacts.get(index).get(0)); break;
+                            switch (readChoice()) {
+                                case 1: NewMessage(esql, contacts.get(index)); break;
+                                case 2: AddToBlock(esql, contacts.get(index)); break;
+                                case 3: DeleteContact(esql, contacts.get(index)); break;
                             }
                         }
                     }
@@ -525,11 +584,12 @@ public class Messenger {
     }//end
 
     public static void NewMessage(Messenger esql) {
-        System.out.print("Enter the login or the phone number of user")
-        NewMseeage(esql, receiver);
+        System.out.print("Enter the login or the phone number of user");
+        User receiver = null;
+        NewMessage(esql, receiver);
     }
 
-    public static void NewMessage(Messenger esql, String receiver){
+    public static void NewMessage(Messenger esql, User receiver){
         try {
 
 
@@ -549,14 +609,14 @@ public class Messenger {
                 return;
             }
 
-            String query = String.format("SELECT init_sender FROM CHAT WHERE init_sender = '%s'", authorisedUser);
+            String query = String.format("SELECT init_sender FROM CHAT WHERE init_sender = '%s'", authorisedUser.getLogin());
             int userNum = esql.executeQuery(query);
 
             if(userNum > 0){
                 System.out.print("\tSorry, there are linked information to this account. It cannot be deleted");
                 return;
             }
-            String deletion = String.format("DELETE FROM USR WHERE login = '%s'", authorisedUser);
+            String deletion = String.format("DELETE FROM USR WHERE login = '%s'", authorisedUser.getLogin());
             esql.executeUpdate(deletion);
             System.out.println("\tUser deleted successfully!\nBye!");
             System.exit(0);
