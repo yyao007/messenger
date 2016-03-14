@@ -326,7 +326,7 @@ public class Messenger {
           String dbname = args[0];
           String dbport = args[1];
           String user = args[2];
-          esql = new Messenger (dbname, dbport, user, "931005");
+          esql = new Messenger (dbname, dbport, user, "");
 
           boolean keepon = true;
           while(keepon) {
