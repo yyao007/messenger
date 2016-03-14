@@ -15,6 +15,7 @@ public class User {
     String status = null;
     List<User> contact_list = null; // contains a list of users in contact list
     List<User> block_list = null;  // contians a list of users in block list
+    List<Chat> chat_list = null; // a chat list
     
     public User(String login, String password, String phoneNum) {
         this.login = login;
@@ -60,7 +61,20 @@ public class User {
         this.block_list = new ArrayList<User>();
         for (int i = 0; i < list.size(); ++i) {
             User block = new User(list.get(i).get(0), "", list.get(i).get(1));
+            if (list.get(i).size() > 2) {
+                block.setStatus(list.get(i).get(2));
+            }
             this.block_list.add(block);
+        }
+        return;
+    }
+    
+    public void set_chat_list(List<List<String>> list) {
+        this.chat_list = new ArrayList<Chat>();
+        for (int i = 0; i < list.size(); ++i) {
+            Chat temp = new Chat(list.get(i).get(0), list.get(i).get(1));
+            temp.setChatId(Integer.parseInt(list.get(i).get(2)));
+            this.chat_list.add(temp);
         }
         return;
     }
@@ -71,14 +85,40 @@ public class User {
     
     public List<User> get_block_list() {
         return this.block_list;
-    
     }
     
-    public void addContact(List<List<String>> contact) {
-            User contactToAdd = new User(contact.get(0).get(0), "", contact.get(0).get(1));
-            if (contact.get(0).size() > 2) {
-                contactToAdd.setStatus(contact.get(0).get(2));
+    public List<Chat> get_chat_list() {
+        return this.chat_list;
+    }
+    
+    public void addContact(User contact) {
+            //User contactToAdd = new User(contact.get(0).get(0), "", contact.get(0).get(1));
+            this.contact_list.add(contact);
+    }
+    
+    public void addBlock(User block) {
+           // User blockToAdd = new User(login, "", phoneNum);
+            this.block_list.add(block);
+    }
+    
+    public void deleteContact(String login) {
+        for(int i = 0; i < contact_list.size(); ++i) {
+            if (contact_list.get(i).getLogin().equals(login)) {
+                contact_list.remove(i);
+                return;
             }
-            this.contact_list.add(contactToAdd);
+        }
+        return;
     }
+    
+    public void deleteBlock(String login) {
+        for(int i = 0; i < block_list.size(); ++i) {
+            if (block_list.get(i).getLogin().equals(login)) {
+                block_list.remove(i);
+                return;
+            }
+        }
+        return;
+    }
+    
 }
