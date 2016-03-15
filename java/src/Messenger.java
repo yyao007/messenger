@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.StringTokenizer;
 import java.util.Date;
+import java.text.SimpleDateFormat;
  
 /**
  * This class defines a simple embedded SQL utility class that is designed to
@@ -101,37 +102,37 @@ public class Messenger {
      * @throws java.sql.SQLException when failed to execute the query
      */
     public int executeQueryAndPrintResult (String query) throws SQLException {
-       // creates a statement object
-       Statement stmt = this._connection.createStatement ();
+        // creates a statement object
+        Statement stmt = this._connection.createStatement ();
 
-       // issues the query instruction
-       ResultSet rs = stmt.executeQuery (query);
+        // issues the query instruction
+        ResultSet rs = stmt.executeQuery (query);
 
-       /*
+        /*
         ** obtains the metadata object for the returned result set.  The metadata
         ** contains row and column info.
         */
-       ResultSetMetaData rsmd = rs.getMetaData ();
-       int numCol = rsmd.getColumnCount ();
-       int rowCount = 0;
+        ResultSetMetaData rsmd = rs.getMetaData ();
+        int numCol = rsmd.getColumnCount ();
+        int rowCount = 0;
 
-       // iterates through the result set and output them to standard out.
-       boolean outputHeader = true;
-       while (rs.next()){
-      if(outputHeader){
-         for(int i = 1; i <= numCol; i++){
-     	System.out.print(rsmd.getColumnName(i) + "\t");
-         }
-         System.out.println();
-         outputHeader = false;
-      }
-          for (int i=1; i<=numCol; ++i)
-             System.out.print (rs.getString (i) + "\t");
-          System.out.println ();
-          ++rowCount;
-       }//end while
-       stmt.close ();
-       return rowCount;
+        // iterates through the result set and output them to standard out.
+        boolean outputHeader = true;
+        while (rs.next()){
+            if(outputHeader){
+                for(int i = 1; i <= numCol; i++){
+         	        System.out.print(rsmd.getColumnName(i) + "\t");
+                }
+                System.out.println();
+                outputHeader = false;
+            }
+            for (int i=1; i<=numCol; ++i)
+                System.out.print (rs.getString (i) + "\t");
+            System.out.println ();
+            ++rowCount;
+        }//end while
+        stmt.close ();
+        return rowCount;
     }//end executeQuery
 
     /**
@@ -170,7 +171,7 @@ public class Messenger {
                }
                record.add(temp.trim());
 //              System.out.format("%d: "+rs.getString(i).trim(), i);
-          }
+           }
           
           result.add(record);
        }//end while
@@ -196,7 +197,7 @@ public class Messenger {
         int rowCount = 0;
 
         // iterates through the result set and count nuber of results.
-        if(rs.next()){
+        while(rs.next()){
            rowCount++;
         }//end while
         stmt.close ();
@@ -572,9 +573,6 @@ public class Messenger {
                     
             String queryUpdate = String.format("INSERT INTO USER_LIST_CONTAINS(list_id, list_member) VALUES('%s', '%s')", contact_list.get(0).get(0), contact.getLogin());
             esql.executeUpdate(queryUpdate);
-               
-            // update authorisedUser also
-            //authorisedUser.addContact(contact);
             esql.refresh();
                
             System.out.println("User added to contact list successfully!\n");
@@ -658,7 +656,7 @@ public class Messenger {
             esql.executeUpdate(addToBlock);
             // update authorisedUser
             esql.refresh();
-            //authorisedUser.addBlock(block);
+            
             System.out.println("User added to block list successfully!");
             return;
 
@@ -692,7 +690,6 @@ public class Messenger {
             String queryDelete = String.format("DELETE FROM USER_LIST_CONTAINS WHERE list_id = '%s' AND list_member = '%s'", list_id.get(0).get(0), block.getLogin());
             esql.executeUpdate(queryDelete);
             esql.refresh();
-            //authorisedUser.deleteBlock(block.getLogin());
             
             System.out.println("Block deleted successfully!");
             
@@ -860,7 +857,7 @@ public class Messenger {
 
     public static void NewMessage(Messenger esql) {
         try {
-            System.out.println("1. Enter user's login");
+            System.out.println("\n1. Enter user's login");
             System.out.println("2. Choose from contact list");
             System.out.println("3. Back");
             
@@ -896,7 +893,7 @@ public class Messenger {
                     user_list.add(contact_list.get(i).getLogin());
                 }
                 
-                List<String> receivers = ChooseUsers(user_list);
+                List<String> receivers = ChooseUsers(user_list, false);
                 // add user himself to the chat member
                 receivers.add(authorisedUser.getLogin());
                 NewMessage(esql, receivers);
@@ -955,8 +952,9 @@ public class Messenger {
             }
             
             Date date = new Date();
-            long time = date.getTime();
-            Timestamp ts = new Timestamp(time);
+            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String time = df.format(date);
+            Timestamp ts = Timestamp.valueOf(time);
             
             String sendMsg = String.format("INSERT INTO MESSAGE(msg_text, msg_timestamp, sender_login, chat_id) "
                                         + "VALUES('%s', ?, '%s', %d)", text, authorisedUser.getLogin(), chat_id);
@@ -1002,8 +1000,9 @@ public class Messenger {
             }
             
             Date date = new Date();
-            long time = date.getTime();
-            Timestamp ts = new Timestamp(time);
+            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String time = df.format(date);
+            Timestamp ts = Timestamp.valueOf(time);
             
             String sendMsg = String.format("INSERT INTO MESSAGE(msg_text, msg_timestamp, sender_login, chat_id) "
                                         + "VALUES('%s', ?, '%s', %d)", text, authorisedUser.getLogin(), chat_id);
@@ -1029,8 +1028,9 @@ public class Messenger {
             }
             
             Date date = new Date();
-            long time = date.getTime();
-            Timestamp ts = new Timestamp(time);
+            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String time = df.format(date);
+            Timestamp ts = Timestamp.valueOf(time);
             String sendMsg = String.format("INSERT INTO MESSAGE(msg_text, msg_timestamp, sender_login, chat_id) "
                                         + "VALUES('%s', ?, '%s', %d)", text, authorisedUser.getLogin(), chat.getChatId());
             PreparedStatement pstmt = esql._connection.prepareStatement(sendMsg);
@@ -1090,7 +1090,7 @@ public class Messenger {
                 System.out.println(String.format("\n%-23s%-23sType", "Chat", "Last updated"));
                 for (i = k-10; i < chat_list.size() && i < k; ++i) {
                     String timestamp = chat_list.get(i).get_msg_list().get(0).getTimestamp();
-                    timestamp = timestamp.substring(0, 19);
+                    //timestamp = timestamp.substring(0, 18);
                     System.out.println(String.format("%d. %-20s%-23s"
                                         + chat_list.get(i).getType(),
                                         i, chat_list.get(i).getChatName(),
@@ -1146,13 +1146,13 @@ public class Messenger {
                                 i = k;
                                 break;
                             }
-                            else if (n > 2 && c == 3) {
+                            else if (n > 3 && c == 3) {
                                 DeleteChat(esql, chat_list.get(index));
                                 k -= 10; 
                                 i = k;
                                 break;
                             }
-                            else if (n > 2 && c == 4) {
+                            else if (n > 3 && c == 4) {
                                 k -= 10; 
                                 i = k;
                                 break;
@@ -1178,32 +1178,30 @@ public class Messenger {
         }
     }//end
     
-    public static String[] wrap(String input, int maxCharInLine){
-
-        StringTokenizer tok = new StringTokenizer(input, " ");
+    public static String[] BreakIntoLines(String input, int maxLineLength) {
+        String[] tokens = input.split("\\s+");
         StringBuilder output = new StringBuilder(input.length());
         int lineLen = 0;
-        while (tok.hasMoreTokens()) {
-            String word = tok.nextToken();
+        for (int i = 0; i < tokens.length; i++) {
+            String word = tokens[i];
     
-            while(word.length() > maxCharInLine){
-                output.append(word.substring(0, maxCharInLine-lineLen) + "\n");
-                word = word.substring(maxCharInLine-lineLen);
+            if (lineLen + (" " + word).length() > maxLineLength) {
+                if (i > 0) {
+                    output.append('\n');
+                }
                 lineLen = 0;
             }
-    
-            if (lineLen + word.length() > maxCharInLine) {
-                output.append("\n");
-                lineLen = 0;
+            if (i < tokens.length - 1 && (lineLen + (word + " ").length() + tokens[i + 1].length() <=
+                    maxLineLength)) {
+                word += " ";
             }
-            output.append(word + " ");
-    
-            lineLen += word.length() + 1;
+            output.append(word);
+            lineLen += word.length();
         }
         
         return output.toString().split("\n");
     }
-    
+
     public static void ListMessages(Messenger esql, Chat chat) {
         try {
             int i = 0;
@@ -1211,28 +1209,45 @@ public class Messenger {
             int k = 0;
             while (true) {  
                 esql.refreshChats();
-                List<Message> msg_list = chat.get_msg_list();
-                if (msg_list.isEmpty()) {
-                    System.out.println("\nEmpty");
-                    return;
+                List<Chat> cl = authorisedUser.get_chat_list();
+                for (int n = 0; n < cl.size(); ++n) {
+                    if (cl.get(n).getChatId() == chat.getChatId()) {
+                        chat = cl.get(n);
+                        break;
+                    }
                 }
+                List<Message> msg_list = chat.get_msg_list();
                 
                 k += 10;
                 System.out.println("");
                 for (i = k-10; i < msg_list.size() && i < k; ++i) {
-                    // output timestamp only to minute
+                    
                     String timestamp = msg_list.get(i).getTimestamp();
-                    timestamp = timestamp.substring(0, 19);
-                    System.out.println(String.format("%d. %-20s"+ timestamp + ":",
-                                        i, msg_list.get(i).getSender()));
                     // output message text on multiple lines without wrap
-                    String[] msgTxt = wrap(msg_list.get(i).getText(), 40);
-                    System.out.println(Arrays.toString(msgTxt));
+                    String[] msgTxt = BreakIntoLines(msg_list.get(i).getText(), 26);
+                    // output message to the right if you are the sender
+                    if (msg_list.get(i).getSender().equals(authorisedUser.getLogin())) {
+                        System.out.println(String.format("%-23s%-23s%d. You",
+                                                            "", timestamp, i));
+                        for (int n = 0; n < msgTxt.length; ++n) {
+                            System.out.println(String.format("%-26s%26s", "", msgTxt[n])); 
+                        }
+                        
+                    }
+                    else {
+                        System.out.println(String.format("%d. %-20s"+ timestamp,
+                                            i, msg_list.get(i).getSender()));
+                        // System.out.println(Arrays.toString(msgTxt) + "\n");
+                        for (int n = 0; n < msgTxt.length; ++n) {
+                            System.out.println(msgTxt[n]); 
+                        }
+                    }
+                    System.out.println("");
                 }
                 
                 boolean isGoing = true;
                 do {
-                    System.out.println("\n1. Create new message");
+                    System.out.println("1. Create new message");
                     System.out.println("2. Edit a message");
                     System.out.print("Please make a choice(b to go back, m to view more): ");
                     String choice = in.readLine();
@@ -1279,8 +1294,17 @@ public class Messenger {
                         
                         int index = Integer.parseInt(in_str);
                         if (index < i && index >= k-10) {
-                            String[] msgTxt = wrap(msg_list.get(index).getText(), 50);
-                            System.out.println(Arrays.toString(msgTxt) + ":");
+                            String[] msgTxt = BreakIntoLines(msg_list.get(index).getText(), 26);
+                            System.out.println("");
+                            System.out.print("[");
+                            for (int n = 0; n < msgTxt.length; ++n) {
+                                if (n == msgTxt.length - 1) {
+                                    System.out.println(msgTxt[n] + "]:");
+                                }
+                                else {
+                                    System.out.println(msgTxt[n]); 
+                                }
+                            }
                             
                             int n = 0;
                             
@@ -1300,6 +1324,12 @@ public class Messenger {
                                     break;
                                 }
                                 else if (c == 2) {
+                                    if (msg_list.size() == 1) {
+                                        System.out.println("\nCan't delete all messages!");
+                                        k -= 10; 
+                                        i = k;
+                                        break;
+                                    }
                                     DeleteMsg(esql, msg_list.get(index));
                                     k -= 10; 
                                     i = k;
@@ -1340,7 +1370,7 @@ public class Messenger {
     public static void ListMembers(Messenger esql, Chat c) {
         try {
             while (true) {
-                System.out.println("\n " + c.getChatName() + ":");
+                System.out.println("\n" + c.getChatName() + ":");
                 
                 String getMember = String.format("SELECT member FROM CHAT_LIST WHERE "
                                                 + "chat_id = %d", c.getChatId());
@@ -1379,8 +1409,8 @@ public class Messenger {
                             member_list.add(contact_list.get(i).getLogin());
                         }
                     }
-                    List<String> memberToAdd = ChooseUsers(member_list);
-                    if (!memberToAdd.isEmpty()) {
+                    List<String> memberToAdd = ChooseUsers(member_list, false);
+                    if (memberToAdd != null) {
                         AddMember(esql, c, memberToAdd);
                     }
                     return;
@@ -1399,8 +1429,8 @@ public class Messenger {
                         }
                         member_list.add(members.get(i).get(0));
                     }
-                    List<String> memberToDelete = ChooseUsers(member_list);
-                    if (!memberToDelete.isEmpty()) {
+                    List<String> memberToDelete = ChooseUsers(member_list, true);
+                    if (memberToDelete != null) {
                         DeleteMember(esql, c, memberToDelete);
                     }
                     return;
@@ -1416,7 +1446,7 @@ public class Messenger {
         }
     }
     
-    public static List<String> ChooseUsers(List<String> user_list) {
+    public static List<String> ChooseUsers(List<String> user_list, boolean isDelete) {
         try {
             int i = 0;
             int j = 0;
@@ -1461,8 +1491,17 @@ public class Messenger {
                     else if (isInteger(choice)) {
                         int index = Integer.parseInt(choice);
                         if (index < i && index >= k-10) {
+                            if (isDelete && user_list.size() == 1) {
+                                System.out.println("Can't delete all members!");
+                                k -= 10;
+                                i = k;
+                                break;
+                            }
                             chosenUser.add(user_list.get(index));
                             user_list.remove(index);
+                            k -= 10;
+                            i = k;
+                            break;
                         }
                     }
                     else {
@@ -1491,6 +1530,7 @@ public class Messenger {
                 String getMember = String.format("SELECT member FROM CHAT_LIST WHERE "
                                                 + "chat_id = %d", c.getChatId());
                 int members = esql.executeQuery(getMember);
+            
                 if (members > 2) {
                     // update chat type to group
                     String updateType = String.format("UPDATE CHAT SET chat_type = 'group' WHERE chat_id = %d",
@@ -1509,18 +1549,18 @@ public class Messenger {
         try {
             String getMember = String.format("SELECT member FROM CHAT_LIST WHERE "
                                                 + "chat_id = %d", c.getChatId());
-            int members = esql.executeQuery(getMember);
             for (int i = 0; i < mToDelete.size(); ++i) {
-                if (members == 2) {
-                    String updateType = String.format("UPDATE CHAT SET chat_type = 'private' WHERE chat_id = %d",
-                                                        c.getChatId());
-                    esql.executeUpdate(updateType);
-                    return;
-                }
                 String deleteUser = String.format("DELETE FROM CHAT_LIST WHERE "
                                                 + "chat_id = %d AND member = '%s'",
                                                 c.getChatId(), mToDelete.get(i));
                 esql.executeUpdate(deleteUser);
+            }
+            
+            int members = esql.executeQuery(getMember);
+            if (members == 2) {
+                String updateType = String.format("UPDATE CHAT SET chat_type = 'private' WHERE chat_id = %d",
+                                                    c.getChatId());
+                esql.executeUpdate(updateType);
             }
             System.out.println("Members deleted successfully!");
         }catch(Exception e){
